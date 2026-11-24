@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>1С:УАТ ИИ-Ассистент — Read-Only аналитика автопарка и рейсов</title>
+<style>
+  :root {
+    --bg: #0b1120;
+    --card: #111827;
+    --card2: #1e293b;
+    --border: rgba(148, 163, 184, 0.18);
+    --text: #f1f5f9;
+    --muted: #94a3b8;
+    --accent: #38bdf8;
+    --green: #10b981;
+    --amber: #f59e0b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    padding: 24px;
+  }
+  .container { max-width: 1120px; margin: 0 auto; }
+  .header {
+    display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;
+    gap: 16px; padding-bottom: 20px; border-bottom: 1px solid var(--border); margin-bottom: 24px;
+  }
+  .brand { font-size: 22px; font-weight: 800; }
+  .brand span { color: var(--amber); }
+  .sub { font-size: 13px; color: var(--muted); }
+  .badges { display: flex; gap: 8px; flex-wrap: wrap; }
+  .badge {
+    font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 999px;
+    background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); color: var(--green);
+  }
+  .badge.blue { background: rgba(56, 189, 248, 0.12); border-color: rgba(56, 189, 248, 0.35); color: var(--accent); }
+
+  .layout { display: grid; grid-template-columns: 320px 1fr; gap: 20px; }
+  @media (max-width: 860px) { .layout { grid-template-columns: 1fr; } }
+
+  .panel {
+    background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 18px;
+  }
+  .panel-title { font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 12px; }
+
+  .prompt-btn {
+    width: 100%; text-align: left; padding: 12px 14px; margin-bottom: 10px;
+    border-radius: 12px; border: 1px solid var(--border); background: var(--card2);
+    color: var(--text); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s;
+  }
+  .prompt-btn:hover, .prompt-btn.active {
+    border-color: var(--accent); background: rgba(56, 189, 248, 0.16);
+  }
+
+  .security-box {
+    margin-top: 16px; padding: 14px; border-radius: 12px;
+    background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25);
+    font-size: 12px; color: #a7f3d0;
+  }
+
+  .chat-area { display: flex; flex-direction: column; gap: 16px; }
+  .user-msg {
+    align-self: flex-end; max-width: 80%;
+    background: rgba(56, 189, 248, 0.18); border: 1px solid rgba(56, 189, 248, 0.35);
+    padding: 12px 16px; border-radius: 14px 14px 4px 14px; font-size: 14px; font-weight: 600;
+  }
+  .ai-msg {
+    background: var(--card2); border: 1px solid var(--border);
+    padding: 18px; border-radius: 14px 14px 14px 4px; font-size: 14px;
+  }
+  .ai-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 12px; color: var(--accent); font-weight: 700; }
+  .query-box {
+    margin-top: 14px; padding: 12px; border-radius: 10px;
+    background: #090d16; border: 1px solid rgba(148, 163, 184, 0.15);
+    font-family: ui-monospace, Consolas, monospace; font-size: 12px; color: #7dd3fc; overflow-x: auto;
+  }
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-size: 12px; }
+  .custom-input { display: flex; gap: 10px; margin-top: 8px; }
+  input {
+    flex: 1; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border);
+    background: var(--card2); color: var(--text); font-size: 14px;
+  }
+  .send-btn {
+    padding: 12px 20px; border-radius: 10px; border: none;
+    background: linear-gradient(90deg, #0ea5e9, #10b981); color: #fff; font-weight: 700; cursor: pointer;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div>
+      <div class="brand">1С:<span>УАТ</span> ИИ-Ассистент</div>
+      <div class="sub">Безопасный Read-Only шлюз к базе 1С:Управление автотранспортом (OData / HTTP-сервис + LLM)</div>
+    </div>
+    <div class="badges">
+      <div class="badge">Режим: ТОЛЬКО ЧТЕНИЕ (Read-Only)</div>
+      <div class="badge blue">OData / HTTP-сервис 1С</div>
+      <div class="badge blue">Telegram / Web-чат</div>
+    </div>
+  </div>
+
+  <div class="layout">
+    <div class="panel">
+      <div class="panel-title">Типовые вопросы сотрудников</div>
+      <button class="prompt-btn active" onclick="ask('month')">Сколько перевозок выполнили за прошлый месяц?</button>
+      <button class="prompt-btn" onclick="ask('active')">Какие рейсы сейчас находятся в работе?</button>
+      <button class="prompt-btn" onclick="ask('debt')">Какие клиенты должны нам деньги?</button>
+      <button class="prompt-btn" onclick="ask('client')">Найди информацию по клиенту ООО «СеверЛогистик»</button>
+
+      <div class="security-box">
+        <strong>Почему раньше не получалось и как решаем:</strong><br>
+        LLM не лезет в базу напрямую. Запросы идут через типизированный HTTP-сервис / OData в 1С под учёткой с правами <strong>только на чтение</strong>, без доступа к проведению или изменению документов.
+      </div>
+    </div>
+
+    <div class="panel chat-area">
+      <div class="user-msg" id="q-text">Сколько перевозок выполнили за прошлый месяц?</div>
+      <div class="ai-msg">
+        <div class="ai-head">
+          <span>ИИ-Ассистент 1С:УАТ</span>
+          <span>Источник: OData / Document_УАТ_ЗаказНаТС (Read-Only)</span>
+        </div>
+        <div id="a-body"></div>
+        <div class="query-box" id="a-query"></div>
+      </div>
+
+      <div class="custom-input">
+        <input type="text" id="inp" placeholder="Задайте свой тестовый вопрос по автопарку или дебиторке..." />
+        <button class="send-btn" onclick="askCustom()">Спросить</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const scenarios = {
+  month: {
+    q: "Сколько перевозок выполнили за прошлый месяц?",
+    body: `<p>За прошлый месяц (октябрь) выполнено <strong>148 рейсов</strong> (общая сумма фрахта: <strong>6 420 000 ₽</strong>, средний пробег на рейс: 412 км).</p>
+    <table>
+      <thead><tr><th>Направление</th><th>Рейсов</th><th>Выручка</th></tr></thead>
+      <tbody>
+        <tr><td>СПб — Москва</td><td>64</td><td>2 980 000 ₽</td></tr>
+        <tr><td>СПб — Казань</td><td>31</td><td>1 890 000 ₽</td></tr>
+        <tr><td>Региональные (ЛО / СЗФО)</td><td>53</td><td>1 550 000 ₽</td></tr>
+      </tbody>
+    </table>`,
+    query: `GET /odata/standard.odata/Document_уатМаршрутныйЛист?$filter=Дата ge datetime'2026-10-01T00:00:00' and Проведен eq true&$select=Number,Дата,СуммаДокумента`
+  },
+  active: {
+    q: "Какие рейсы сейчас находятся в работе?",
+    body: `<p>Сейчас в пути находятся <strong>4 активных рейса</strong>:</p>
+    <table>
+      <thead><tr><th>Рейс / ТС</th><th>Водитель</th><th>Маршрут</th><th>Статус</th></tr></thead>
+      <tbody>
+        <tr><td>МЛ-0412 · Volvo FH (А123ВС78)</td><td>Иванов С.П.</td><td>СПб -> Москва</td><td>В пути (прибытие ~19:00)</td></tr>
+        <tr><td>МЛ-0415 · Scania R450 (К884МН47)</td><td>Петров А.В.</td><td>Луга -> Тверь</td><td>На погрузке</td></tr>
+        <tr><td>МЛ-0418 · КАМАЗ 5490 (О312ТТ78)</td><td>Сидоров Д.Н.</td><td>Выборг -> СПб</td><td>Возврат порожним</td></tr>
+      </tbody>
+    </table>`,
+    query: `GET /hs/ai_gateway/v1/active_trips?status=ВРаботе (ReadOnly HTTP-сервис 1С:УАТ)`
+  },
+  debt: {
+    q: "Какие клиенты должны нам деньги?",
+    body: `<p>Общая дебиторская задолженность по проведённым актам: <strong>1 245 000 ₽</strong> (3 контрагента с просрочкой):</p>
+    <table>
+      <thead><tr><th>Контрагент</th><th>Долг</th><th>Просрочка</th></tr></thead>
+      <tbody>
+        <tr><td>ООО «СтройТранс»</td><td>680 000 ₽</td><td>18 дней</td></tr>
+        <tr><td>АО «МеталлКомплект»</td><td>410 000 ₽</td><td>9 дней</td></tr>
+        <tr><td>ООО «СеверЛогистик»</td><td>155 000 ₽</td><td>3 дня</td></tr>
+      </tbody>
+    </table>`,
+    query: `GET /hs/ai_gateway/v1/receivables?min_overdue_days=1 (Регистр взаиморасчётов 1С)`
+  },
+  client: {
+    q: "Найди информацию по клиенту ООО «СеверЛогистик»",
+    body: `<p><strong>ООО «СеверЛогистик»</strong> (ИНН 7814092310, менеджер: Кузнецова Е.):</p>
+    <p>• Всего рейсов за год: <strong>27</strong> (выручка 1 480 000 ₽)<br>
+    • Текущая задолженность: <strong>155 000 ₽</strong> (счёт №419, просрочка 3 дня)<br>
+    • Последний рейс: 21.11.2026, СПб — Великий Новгород (закрыт без претензий)</p>`,
+    query: `GET /hs/ai_gateway/v1/client_card?inn=7814092310`
+  }
+};
+
+function ask(key) {
+  const btns = document.querySelectorAll('.prompt-btn');
+  btns.forEach((b, i) => b.classList.toggle('active', ['month','active','debt','client'][i] === key));
+  const s = scenarios[key];
+  document.getElementById('q-text').textContent = s.q;
+  document.getElementById('a-body').innerHTML = s.body;
+  document.getElementById('a-query').textContent = s.query;
+}
+
+function askCustom() {
+  const val = document.getElementById('inp').value.trim();
+  if (!val) return;
+  document.getElementById('q-text').textContent = val;
+  document.getElementById('a-body').innerHTML = `<p>В боевой версии ассистент классифицирует ваш запрос «<em>${val}</em>», подбирает безопасный Read-Only эндпоинт 1С:УАТ, получает свежие данные из регистров и формирует ответ с таблицей или выгрузкой в Excel.</p>`;
+  document.getElementById('a-query').textContent = `POST /ai/router -> safe_read_only_1c_query(intent="${val.slice(0,45)}...")`;
+  document.getElementById('inp').value = '';
+}
+
+ask('month');
+</script>
+</body>
+</html>
